@@ -31,14 +31,11 @@ void q_free(struct list_head *l)
 {
     if (l == NULL)
         return;
-    if (!list_empty(l)) {
-        struct list_head *node, *safe;
-        list_for_each_safe (node, safe, l) {
-            list_del(node);
-            q_release_element(list_entry(node, element_t, list));
-        }
+    element_t *elem, *safe;
+    list_for_each_entry_safe (elem, safe, l, list) {
+        q_release_element(elem);
     }
-    free(list_entry(l, element_t, list));
+    free(elem);
 }
 
 /*
