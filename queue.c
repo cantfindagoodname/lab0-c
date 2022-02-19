@@ -5,6 +5,8 @@
 #include "harness.h"
 #include "queue.h"
 
+// change something in queue.c
+
 /* Notice: sometimes, Cppcheck would find the potential NULL pointer bugs,
  * but some of them cannot occur. You can suppress them by adding the
  * following line.
