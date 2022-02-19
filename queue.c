@@ -5,8 +5,6 @@
 #include "harness.h"
 #include "queue.h"
 
-// change something in queue.c
-
 /* Notice: sometimes, Cppcheck would find the potential NULL pointer bugs,
  * but some of them cannot occur. You can suppress them by adding the
  * following line.
@@ -47,6 +45,12 @@ void q_free(struct list_head *l)
  */
 bool q_insert_head(struct list_head *head, char *s)
 {
+    struct list_head *node = q_new();
+    if (node == NULL)
+        return false;
+    list_entry(node, element_t, list)->value = malloc(strlen(s) + 1);
+    strncpy(list_entry(node, element_t, list)->value, s, strlen(s) + 1);
+    list_add(node, head);
     return true;
 }
 
@@ -59,6 +63,12 @@ bool q_insert_head(struct list_head *head, char *s)
  */
 bool q_insert_tail(struct list_head *head, char *s)
 {
+    struct list_head *node = q_new();
+    if (node == NULL)
+        return false;
+    list_entry(node, element_t, list)->value = malloc(strlen(s) + 1);
+    strncpy(list_entry(node, element_t, list)->value, s, strlen(s) + 1);
+    list_add_tail(node, head);
     return true;
 }
 
