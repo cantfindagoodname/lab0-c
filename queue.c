@@ -242,9 +242,67 @@ void q_reverse(struct list_head *head)
     }
 }
 
+struct list_head *merge(struct list_head *a, struct list_head *b)
+{
+    struct list_head *head = NULL, **tail = &head;
+    for (;;) {
+        if (strcmp(list_entry(a, element_t, list)->value,
+                   list_entry(b, element_t, list)->value) <= 0) {
+            *tail = a;
+            tail = &a->next;
+            a = a->next;
+            if (!a) {
+                *tail = b;
+                break;
+            }
+        } else {
+            *tail = b;
+            tail = &b->next;
+            b = b->next;
+            if (!b) {
+                *tail = a;
+                break;
+            }
+        }
+    }
+    return head;
+}
+
+struct list_head *merge_sort(struct list_head *head)
+{
+    if (head == NULL || head->next == NULL)
+        return head;
+
+    struct list_head *left = head;
+    struct list_head *right = left->next;
+    left->next = NULL;
+
+    left = merge_sort(head);
+    right = merge_sort(right);
+
+    return merge(left, right);
+}
+
 /*
  * Sort elements of queue in ascending order
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */
-void q_sort(struct list_head *head) {}
+void q_sort(struct list_head *head)
+{
+    if (head == NULL || list_empty(head) || list_is_singular(head))
+        return;
+    struct list_head *start = head->next;
+    struct list_head *final = head->prev;
+    start->prev = final->next = NULL;
+    INIT_LIST_HEAD(head);
+
+    head->next = merge_sort(start);
+    head->next->prev = head;
+
+    struct list_head *temp = head->next;
+    for (; temp->next != NULL; temp = temp->next)
+        ;
+    head->prev = temp;
+    temp->next = head;
+}
