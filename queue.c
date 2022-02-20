@@ -128,7 +128,14 @@ void q_release_element(element_t *e)
  */
 int q_size(struct list_head *head)
 {
-    return -1;
+    int size = 0;
+    if (head == NULL || list_empty(head))
+        return size;
+    struct list_head *node;
+    list_for_each (node, head) {
+        ++size;
+    }
+    return size;
 }
 
 /*
@@ -139,9 +146,22 @@ int q_size(struct list_head *head)
  * Return true if successful.
  * Return false if list is NULL or empty.
  */
+
 bool q_delete_mid(struct list_head *head)
 {
-    // https://leetcode.com/problems/delete-the-middle-node-of-a-linked-list/
+    if (head == NULL || list_empty(head))
+        return false;
+    struct list_head *forward, *backward;
+    forward = head->next;
+    backward = head->prev;
+    while (forward != backward) {
+        forward = forward->next;
+        if (forward == backward)
+            break;
+        backward = backward->prev;
+    }
+    list_del_init(forward);
+    q_release_element(list_entry(forward, element_t, list));
     return true;
 }
 
@@ -154,9 +174,32 @@ bool q_delete_mid(struct list_head *head)
  * Note: this function always be called after sorting, in other words,
  * list is guaranteed to be sorted in ascending order.
  */
+
+// TODO remove duplicates at once instead of one at a time
 bool q_delete_dup(struct list_head *head)
 {
-    // https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/
+    if (head == NULL)
+        return false;
+
+    element_t *elem, *safe, *last = NULL;
+    list_for_each_entry_safe (elem, safe, head, list) {
+        if (&safe->list == head)
+            break;
+        if (!strcmp(elem->value, safe->value)) {
+            last = safe;
+            list_del_init(&elem->list);
+            q_release_element(elem);
+        } else {
+            if (last != NULL && last == elem) {
+                list_del_init(&elem->list);
+                q_release_element(elem);
+            }
+        }
+    }
+    if (last == list_last_entry(head, element_t, list)) {
+        list_del_init(&elem->list);
+        q_release_element(elem);
+    }
     return true;
 }
 
@@ -165,6 +208,20 @@ bool q_delete_dup(struct list_head *head)
  */
 void q_swap(struct list_head *head)
 {
+    int phase = 0;
+    struct list_head *node, *safe;
+    list_for_each_safe (node, safe, head) {
+        if (phase) {
+            struct list_head *swap = node->prev;
+            swap->prev->next = node;
+            node->prev->next = safe;
+            node->next = swap;
+            safe->prev = swap;
+            node->prev = swap->prev;
+            swap->prev = node;
+        }
+        phase ^= 1;
+    }
     // https://leetcode.com/problems/swap-nodes-in-pairs/
 }
 
