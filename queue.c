@@ -222,7 +222,6 @@ void q_swap(struct list_head *head)
         }
         phase ^= 1;
     }
-    // https://leetcode.com/problems/swap-nodes-in-pairs/
 }
 
 /*
@@ -232,7 +231,16 @@ void q_swap(struct list_head *head)
  * (e.g., by calling q_insert_head, q_insert_tail, or q_remove_head).
  * It should rearrange the existing ones.
  */
-void q_reverse(struct list_head *head) {}
+void q_reverse(struct list_head *head)
+{
+    if (head == NULL || list_empty(head))
+        return;
+    struct list_head *node, *safe;
+    list_for_each_safe (node, safe, head) {
+        list_del(node);
+        list_add(node, head);
+    }
+}
 
 /*
  * Sort elements of queue in ascending order
