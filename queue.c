@@ -45,6 +45,8 @@ void q_free(struct list_head *l)
  */
 bool q_insert_head(struct list_head *head, char *s)
 {
+    if (head == NULL)
+        return false;
     element_t *elem = malloc(sizeof *elem);
     if (elem == NULL)
         return false;
@@ -63,6 +65,8 @@ bool q_insert_head(struct list_head *head, char *s)
  */
 bool q_insert_tail(struct list_head *head, char *s)
 {
+    if (head == NULL)
+        return false;
     element_t *elem = malloc(sizeof *elem);
     if (elem == NULL)
         return false;
