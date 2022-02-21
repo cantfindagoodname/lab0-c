@@ -301,8 +301,9 @@ void q_sort(struct list_head *head)
     head->next->prev = head;
 
     struct list_head *temp = head->next;
-    for (; temp->next != NULL; temp = temp->next)
-        ;
+    for (; temp->next != NULL; temp = temp->next) {
+        temp->next->prev = temp;
+    }
     head->prev = temp;
     temp->next = head;
 }
