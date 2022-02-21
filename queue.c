@@ -51,6 +51,10 @@ bool q_insert_head(struct list_head *head, char *s)
     if (elem == NULL)
         return false;
     elem->value = malloc(strlen(s) + 1);
+    if (elem->value == NULL) {
+        free(elem);
+        return false;
+    }
     strncpy(elem->value, s, strlen(s) + 1);
     list_add(&elem->list, head);
     return true;
@@ -71,6 +75,10 @@ bool q_insert_tail(struct list_head *head, char *s)
     if (elem == NULL)
         return false;
     elem->value = malloc(strlen(s) + 1);
+    if (elem->value == NULL) {
+        free(elem);
+        return false;
+    }
     strncpy(elem->value, s, strlen(s) + 1);
     list_add_tail(&elem->list, head);
     return true;
