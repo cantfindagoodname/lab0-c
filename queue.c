@@ -291,6 +291,12 @@ struct list_head *merge_sort(struct list_head *head)
 
     struct list_head *left = head;
     struct list_head *right = left->next;
+
+    while (right && right->next) {
+        left = left->next;
+        right = right->next->next;
+    }
+    right = left->next;
     left->next = NULL;
 
     left = merge_sort(head);
