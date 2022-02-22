@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "harness.h"
 #include "queue.h"
@@ -328,4 +329,27 @@ void q_sort(struct list_head *head)
     }
     head->prev = temp;
     temp->next = head;
+}
+
+/*
+ * Shuffle elements of queue
+ * No effect if q is NULL or empty. In addition, if q has only one
+ * element, do nothing
+ */
+void q_shuffle(struct list_head *head)
+{
+    // reset seed every shuffle call
+    srand(time(NULL));
+
+    int size = q_size(head);
+    struct list_head *node, *end = head;
+    while (size > 0) {
+        node = head->next;
+        int roll = rand() % size--;
+        for (int i = 0; i < roll; ++i)
+            node = node->next;
+        list_move_tail(end->prev, node);
+        list_move_tail(node, end);
+        end = end->prev;
+    }
 }
