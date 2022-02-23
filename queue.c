@@ -338,9 +338,6 @@ void q_sort(struct list_head *head)
  */
 void q_shuffle(struct list_head *head)
 {
-    // reset seed every shuffle call
-    srand(time(NULL));
-
     int size = q_size(head);
     struct list_head *node, *end = head;
     while (size > 0) {
