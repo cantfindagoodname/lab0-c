@@ -343,10 +343,10 @@ void handle_request(int out_fd, char *file_name)
     close(out_fd);
 }
 
-void process(int fd, struct sockaddr_in *clientaddr)
+char *process(int fd, struct sockaddr_in *clientaddr)
 {
 #ifdef LOG_ACCESS
-    printf("accept request, fd is %d, pid is %d\n", fd, getpid());
+    printf("accept request, fd is %d, pid is %d\r\n", fd, getpid());
 #endif
     http_request req;
     parse_request(fd, &req);
@@ -364,4 +364,7 @@ void process(int fd, struct sockaddr_in *clientaddr)
 #ifdef LOG_ACCESS
     log_access(status, clientaddr, &req);
 #endif
+    char *ret = malloc(strlen(req.filename) + 1);
+    strncpy(ret, req.filename, strlen(req.filename) + 1);
+    return ret;
 }

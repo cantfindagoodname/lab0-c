@@ -40,6 +40,6 @@ typedef struct sockaddr SA;
 
 void handle_request(int out_fd, char *file_name);
 int open_listenfd(int port);
-void process(int fd, struct sockaddr_in *clientaddr);
+char *process(int fd, struct sockaddr_in *clientaddr);
 
 #endif

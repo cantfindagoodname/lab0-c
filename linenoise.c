@@ -115,6 +115,8 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include "tiny.h"
+
 #define LINENOISE_DEFAULT_HISTORY_MAX_LEN 100
 #define LINENOISE_MAX_LINE 4096
 static char *unsupported_term[] = {"dumb", "cons25", "emacs", NULL};
@@ -852,6 +854,7 @@ void linenoiseEditDeletePrevWord(struct linenoiseState *l)
  * The function returns the length of the current buffer. */
 static int linenoiseEdit(int stdin_fd,
                          int stdout_fd,
+                         int listenfd,
                          char *buf,
                          size_t buflen,
                          const char *prompt)
@@ -886,11 +889,44 @@ static int linenoiseEdit(int stdin_fd,
         signed char c;
         int nread;
         char seq[3];
+        if (listenfd) {
+            fd_set set;
 
-        nread = read(l.ifd, &c, 1);
-        if (nread <= 0)
-            return l.len;
+            FD_ZERO(&set);
+            FD_SET(listenfd, &set);
+            FD_SET(stdin_fd, &set);
+            int rv = select(listenfd + 1, &set, NULL, NULL, NULL);
+            struct sockaddr_in clientaddr;
+            socklen_t clientlen = sizeof clientaddr;
+            int connfd;
 
+            switch (rv) {
+            case -1:
+                perror("select"); /* an error occurred */
+                continue;
+            case 0:
+                printf("timeout occurred\n"); /* an timeout occurred */
+                continue;
+            default:
+                if (FD_ISSET(listenfd, &set)) {
+                    connfd = accept(listenfd, (SA *) &clientaddr, &clientlen);
+                    char *p = process(connfd, &clientaddr);
+                    strncpy(buf, p, strlen(p) + 1);
+                    close(connfd);
+                    free(p);
+                    return strlen(p);
+                } else if (FD_ISSET(stdin_fd, &set)) {
+                    nread = read(l.ifd, &c, 1);
+                    if (nread <= 0)
+                        return l.len;
+                }
+                break;
+            }
+        } else {
+            nread = read(l.ifd, &c, 1);
+            if (nread <= 0)
+                return l.len;
+        }
         /* Only autocomplete when the callback is set. It returns < 0 when
          * there was an error reading from fd. Otherwise it will return the
          * character that should be handled next. */
@@ -1083,7 +1119,10 @@ void linenoisePrintKeyCodes(void)
 
 /* This function calls the line editing function linenoiseEdit() using
  * the STDIN file descriptor set in raw mode. */
-static int linenoiseRaw(char *buf, size_t buflen, const char *prompt)
+static int linenoiseRaw(int listenfd,
+                        char *buf,
+                        size_t buflen,
+                        const char *prompt)
 {
     int count;
 
@@ -1094,7 +1133,8 @@ static int linenoiseRaw(char *buf, size_t buflen, const char *prompt)
 
     if (enableRawMode(STDIN_FILENO) == -1)
         return -1;
-    count = linenoiseEdit(STDIN_FILENO, STDOUT_FILENO, buf, buflen, prompt);
+    count = linenoiseEdit(STDIN_FILENO, STDOUT_FILENO, listenfd, buf, buflen,
+                          prompt);
     disableRawMode(STDIN_FILENO);
     printf("\n");
     return count;
@@ -1144,7 +1184,7 @@ static char *linenoiseNoTTY(void)
  * for a blacklist of stupid terminals, and later either calls the line
  * editing function or uses dummy fgets() so that you will be able to type
  * something even in the most desperate of the conditions. */
-char *linenoise(const char *prompt)
+char *linenoise(int listenfd, const char *prompt)
 {
     char buf[LINENOISE_MAX_LINE];
     int count;
@@ -1167,7 +1207,7 @@ char *linenoise(const char *prompt)
         }
         return strdup(buf);
     } else {
-        count = linenoiseRaw(buf, LINENOISE_MAX_LINE, prompt);
+        count = linenoiseRaw(listenfd, buf, LINENOISE_MAX_LINE, prompt);
         if (count == -1)
             return NULL;
         return strdup(buf);

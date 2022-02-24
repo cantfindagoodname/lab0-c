@@ -401,38 +401,6 @@ static bool do_time(int argc, char *argv[])
     return ok;
 }
 
-static bool do_web(int argc, char *argv[])
-{
-    if (argc != 1) {
-        report(1, "no argument needed for web");
-    }
-
-    struct sockaddr_in clientaddr;
-    int default_port = DEFAULT_PORT, listenfd;
-
-    socklen_t clientlen = sizeof clientaddr;
-
-    listenfd = open_listenfd(default_port);
-    if (listenfd > 0) {
-        printf("listen on port %d, fd is %d\n", default_port, listenfd);
-    } else {
-        perror("ERROR");
-        exit(listenfd);
-    }
-
-    // Ignore SIGPIPE signal, so if browser cancels the request, it
-    // won't kill the whole process.
-    signal(SIGPIPE, SIG_IGN);
-
-    while (1) {
-        int connfd = accept(listenfd, (SA *) &clientaddr, &clientlen);
-        process(connfd, &clientaddr);
-        close(connfd);
-    }
-
-    return true;
-}
-
 /* Initialize interpreter */
 void init_cmd()
 {
@@ -447,7 +415,6 @@ void init_cmd()
     ADD_COMMAND(source, " file           | Read commands from source file");
     ADD_COMMAND(log, " file           | Copy output to file");
     ADD_COMMAND(time, " cmd arg ...    | Time command execution");
-    ADD_COMMAND(web, "                | Stars webserver");
     add_cmd("#", do_comment_cmd, " ...            | Display comment");
     add_param("simulation", &simulation, "Start/Stop simulation mode", NULL);
     add_param("verbose", &verblevel, "Verbosity level", NULL);
@@ -673,20 +640,35 @@ void completion(const char *buf, linenoiseCompletions *lc)
     }
 }
 
-bool run_console(char *infile_name)
+bool run_console(char *infile_name, int *plistenfd)
 {
     if (!push_file(infile_name)) {
         report(1, "ERROR: Could not open source file '%s'", infile_name);
         return false;
     }
 
+    struct sockaddr_in clientaddr;
+    socklen_t clientlen = sizeof clientaddr;
+
     if (!has_infile) {
         char *cmdline;
-        while ((cmdline = linenoise(prompt)) != NULL) {
-            interpret_cmd(cmdline);
-            linenoiseHistoryAdd(cmdline);       /* Add to the history. */
-            linenoiseHistorySave(HISTORY_FILE); /* Save the history on disk. */
-            linenoiseFree(cmdline);
+        while ((cmdline = linenoise(*plistenfd, prompt)) != NULL) {
+            int connfd = accept(*plistenfd, (SA *) &clientaddr, &clientlen);
+            if (connfd == -1) {
+                interpret_cmd(cmdline);
+                linenoiseHistoryAdd(cmdline); /* Add to the history. */
+                linenoiseHistorySave(
+                    HISTORY_FILE); /* Save the history on disk. */
+                linenoiseFree(cmdline);
+            } else {
+                char favicon[] = "<link rel=\"shortcut icon\" href=\"#\">";
+                if (write(connfd, favicon, strlen(favicon)) < 0)
+                    printf("error favico");
+                cmdline = process(connfd, &clientaddr);
+                interpret_cmd(cmdline);
+                free(cmdline);
+                close(connfd);
+            }
         }
     } else {
         while (!cmd_done())

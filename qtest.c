@@ -15,6 +15,8 @@
 #include "dudect/fixture.h"
 #include "list.h"
 
+#include "tiny.h"
+
 /* Our program needs to use regular malloc/free */
 #define INTERNAL 1
 #include "harness.h"
@@ -69,6 +71,8 @@ static int fail_limit = BIG_LIST;
 static int fail_count = 0;
 
 static int string_length = MAXSTRING;
+
+int listenfd = 0;
 
 #define MIN_RANDSTR_LEN 5
 #define MAX_RANDSTR_LEN 10
@@ -711,6 +715,24 @@ static bool do_shuffle(int argc, char *argv[])
     return ok && !error_check();
 }
 
+static bool do_web(int argc, char *argv[])
+{
+    listenfd = open_listenfd(DEFAULT_PORT);
+    if (listenfd > 0) {
+        printf("listen on port %d, fd is %d\n", DEFAULT_PORT, listenfd);
+    } else {
+        perror("ERROR");
+        exit(listenfd);
+    }
+    int flags = fcntl(listenfd, F_GETFL);
+    fcntl(listenfd, F_SETFL, flags | O_NONBLOCK);
+
+    // Ignore SIGPIPE signal, so if browser cancels the request, it
+    // won't kill the whole process.
+    signal(SIGPIPE, SIG_IGN);
+    return true;
+}
+
 static bool is_circular()
 {
     struct list_head *cur = l_meta.l->next;
@@ -825,6 +847,7 @@ static void console_init()
     ADD_COMMAND(swap,
                 "                | Swap every two adjacent nodes in queue");
     ADD_COMMAND(shuffle, "                | Shuffle list");
+    ADD_COMMAND(web, "                | Stars webserver");
     add_param("length", &string_length, "Maximum length of displayed string",
               NULL);
     add_param("malloc", &fail_probability, "Malloc failure probability percent",
@@ -989,7 +1012,7 @@ int main(int argc, char *argv[])
     add_quit_helper(queue_quit);
 
     bool ok = true;
-    ok = ok && run_console(infile_name);
+    ok = ok && run_console(infile_name, &listenfd);
     ok = ok && finish_cmd();
 
     return ok ? 0 : 1;
