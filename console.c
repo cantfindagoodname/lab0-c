@@ -16,6 +16,7 @@
 #include <unistd.h>
 
 #include "report.h"
+#include "tiny.h"
 
 /* Some global values */
 int simulation = 0;
@@ -36,7 +37,10 @@ static double last_time;
  * Must create stack of buffers to handle I/O with nested source commands.
  */
 
+#ifndef RIO_BUFSIZE
 #define RIO_BUFSIZE 8192
+#endif
+
 typedef struct RIO_ELE rio_t, *rio_ptr;
 
 struct RIO_ELE {
@@ -397,6 +401,38 @@ static bool do_time(int argc, char *argv[])
     return ok;
 }
 
+static bool do_web(int argc, char *argv[])
+{
+    if (argc != 1) {
+        report(1, "no argument needed for web");
+    }
+
+    struct sockaddr_in clientaddr;
+    int default_port = DEFAULT_PORT, listenfd;
+
+    socklen_t clientlen = sizeof clientaddr;
+
+    listenfd = open_listenfd(default_port);
+    if (listenfd > 0) {
+        printf("listen on port %d, fd is %d\n", default_port, listenfd);
+    } else {
+        perror("ERROR");
+        exit(listenfd);
+    }
+
+    // Ignore SIGPIPE signal, so if browser cancels the request, it
+    // won't kill the whole process.
+    signal(SIGPIPE, SIG_IGN);
+
+    while (1) {
+        int connfd = accept(listenfd, (SA *) &clientaddr, &clientlen);
+        process(connfd, &clientaddr);
+        close(connfd);
+    }
+
+    return true;
+}
+
 /* Initialize interpreter */
 void init_cmd()
 {
@@ -411,6 +447,7 @@ void init_cmd()
     ADD_COMMAND(source, " file           | Read commands from source file");
     ADD_COMMAND(log, " file           | Copy output to file");
     ADD_COMMAND(time, " cmd arg ...    | Time command execution");
+    ADD_COMMAND(web, "                | Stars webserver");
     add_cmd("#", do_comment_cmd, " ...            | Display comment");
     add_param("simulation", &simulation, "Start/Stop simulation mode", NULL);
     add_param("verbose", &verblevel, "Verbosity level", NULL);
