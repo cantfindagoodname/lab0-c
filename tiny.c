@@ -340,6 +340,7 @@ void handle_request(int out_fd, char *file_name)
 {
     writen(out_fd, "I received ", strlen("I received "));
     writen(out_fd, file_name, strlen(file_name));
+    writen("\n", strlen("\n"););
     close(out_fd);
 }
 
