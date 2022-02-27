@@ -970,6 +970,8 @@ int main(int argc, char *argv[])
     int level = 4;
     int c;
 
+    bool has_infile = false;
+
     while ((c = getopt(argc, argv, "hv:f:l:")) != -1) {
         switch (c) {
         case 'h':
@@ -979,6 +981,7 @@ int main(int argc, char *argv[])
             strncpy(buf, optarg, BUFSIZE);
             buf[BUFSIZE - 1] = '\0';
             infile_name = buf;
+            has_infile = true;
             break;
         case 'v': {
             char *endptr;
@@ -1008,10 +1011,12 @@ int main(int argc, char *argv[])
     console_init();
 
     /* Trigger call back function(auto completion) */
-    linenoiseSetCompletionCallback(completion);
+    if (!has_infile) {
+        linenoiseSetCompletionCallback(completion);
 
-    linenoiseHistorySetMaxLen(HISTORY_LEN);
-    linenoiseHistoryLoad(HISTORY_FILE); /* Load the history at startup */
+        linenoiseHistorySetMaxLen(HISTORY_LEN);
+        linenoiseHistoryLoad(HISTORY_FILE); /* Load the history at startup */
+    }
     set_verblevel(level);
     if (level > 1) {
         set_echo(true);

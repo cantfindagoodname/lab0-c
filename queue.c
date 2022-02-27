@@ -56,7 +56,8 @@ bool q_insert_head(struct list_head *head, char *s)
         free(elem);
         return false;
     }
-    strncpy(elem->value, s, strlen(s) + 1);
+    memcpy(elem->value, s, strlen(s));
+    elem->value[strlen(s)] = '\0';
     list_add(&elem->list, head);
     return true;
 }
@@ -80,7 +81,8 @@ bool q_insert_tail(struct list_head *head, char *s)
         free(elem);
         return false;
     }
-    strncpy(elem->value, s, strlen(s) + 1);
+    memcpy(elem->value, s, strlen(s));
+    elem->value[strlen(s)] = '\0';
     list_add_tail(&elem->list, head);
     return true;
 }
@@ -105,10 +107,20 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
         return NULL;
     struct list_head *node = head->next;
     list_del_init(node);
+
     if (sp != NULL) {
-        strncpy(sp, list_entry(node, element_t, list)->value, bufsize);
-        sp[bufsize - 1] = '\0';
+        size_t len = (bufsize - 1) ^
+                     (((bufsize - 1) ^
+                       (strlen(list_entry(node, element_t, list)->value))) &
+                      -(strlen(list_entry(node, element_t, list)->value) <
+                        (bufsize - 1)));
+        char *psp = list_entry(node, element_t, list)->value;
+        for (int i = 0; i < bufsize; ++i) {
+            sp[i ^ ((i ^ len) & -(i > len))] = *psp++;
+        }
+        sp[len] = '\0';
     }
+
     return list_entry(node, element_t, list);
 }
 
@@ -122,10 +134,20 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
         return NULL;
     struct list_head *node = head->prev;
     list_del_init(node);
+
     if (sp != NULL) {
-        strncpy(sp, list_entry(node, element_t, list)->value, bufsize);
-        sp[bufsize - 1] = '\0';
+        size_t len = (bufsize - 1) ^
+                     (((bufsize - 1) ^
+                       (strlen(list_entry(node, element_t, list)->value))) &
+                      -(strlen(list_entry(node, element_t, list)->value) <
+                        (bufsize - 1)));
+        char *psp = list_entry(node, element_t, list)->value;
+        for (int i = 0; i < bufsize; ++i) {
+            sp[i ^ ((i ^ len) & -(i > len))] = *psp++;
+        }
+        sp[len] = '\0';
     }
+
     return list_entry(node, element_t, list);
 }
 
