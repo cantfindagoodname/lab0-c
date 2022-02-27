@@ -15,6 +15,7 @@
 #include "dudect/fixture.h"
 #include "list.h"
 
+#include "list_sort.h"
 #include "tiny.h"
 
 /* Our program needs to use regular malloc/free */
@@ -53,6 +54,14 @@ static int big_list_size = BIG_LIST;
 
 /* Global variables */
 extern void q_shuffle(struct list_head *);  // cannot modify queue.h
+
+/* compare function for list_sort */
+int __attribute__((nonnull(2, 3)))
+q_cmp(void *priv, const struct list_head *a, const struct list_head *b)
+{
+    return strcmp(list_entry(a, element_t, list)->value,
+                  list_entry(b, element_t, list)->value);
+}
 
 /* List being tested */
 typedef struct {
@@ -604,8 +613,8 @@ static bool do_size(int argc, char *argv[])
 
 bool do_sort(int argc, char *argv[])
 {
-    if (argc != 1) {
-        report(1, "%s takes no arguments", argv[0]);
+    if (argc != 1 && argc != 2) {
+        report(1, "%s takes no more than 2 elements", argv[0]);
         return false;
     }
 
@@ -620,7 +629,8 @@ bool do_sort(int argc, char *argv[])
 
     set_noallocate_mode(true);
     if (exception_setup(true))
-        q_sort(l_meta.l);
+        l_meta.l &&argc == 2 ? list_sort(NULL, l_meta.l, q_cmp)
+                             : q_sort(l_meta.l);
     exception_cancel();
     set_noallocate_mode(false);
 
