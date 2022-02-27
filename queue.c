@@ -19,9 +19,8 @@
 struct list_head *q_new()
 {
     struct list_head *head = malloc(sizeof *head);
-    if (head == NULL)
-        return NULL;
-    INIT_LIST_HEAD(head);
+    if (head)
+        INIT_LIST_HEAD(head);
     return head;
 }
 
@@ -115,8 +114,8 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
                       -(strlen(list_entry(node, element_t, list)->value) <
                         (bufsize - 1)));
         char *psp = list_entry(node, element_t, list)->value;
-        for (int i = 0; i < bufsize; ++i) {
-            sp[i ^ ((i ^ len) & -(i > len))] = *psp++;
+        for (int i = 0; i < bufsize - 1; ++i) {
+            sp[i ^ ((i ^ len) & -(i > len))] = *(psp + (i & -(i < len)));
         }
         sp[len] = '\0';
     }
@@ -142,8 +141,8 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
                       -(strlen(list_entry(node, element_t, list)->value) <
                         (bufsize - 1)));
         char *psp = list_entry(node, element_t, list)->value;
-        for (int i = 0; i < bufsize; ++i) {
-            sp[i ^ ((i ^ len) & -(i > len))] = *psp++;
+        for (int i = 0; i < bufsize - 1; ++i) {
+            sp[i ^ ((i ^ len) & -(i > len))] = *(psp + (i & -(i < len)));
         }
         sp[len] = '\0';
     }
