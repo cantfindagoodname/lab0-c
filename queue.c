@@ -189,14 +189,12 @@ bool q_delete_mid(struct list_head *head)
 {
     if (head == NULL || list_empty(head))
         return false;
-    struct list_head *forward, *backward;
-    forward = head->next;
-    backward = head->prev;
-    while (forward != backward) {
+    struct list_head *forward = NULL, *backward = NULL;
+    for (forward = head->next, backward = head->prev; forward != backward;
+         backward = backward->prev) {
         forward = forward->next;
         if (forward == backward)
             break;
-        backward = backward->prev;
     }
     list_del_init(forward);
     q_release_element(list_entry(forward, element_t, list));
